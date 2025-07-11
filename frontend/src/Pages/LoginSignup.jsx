@@ -4,6 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useApp } from "../Context/AppContext";
 
 export default function LoginSignup() {
   const [isLogin, setIsLogin] = useState(false);
@@ -11,6 +12,8 @@ export default function LoginSignup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { login } = useApp();
+  console.log("in login signup", login);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -30,16 +33,18 @@ export default function LoginSignup() {
           `${import.meta.env.VITE_BACKEND_URL}/api/user/google-signin`,
           { credential: response.credential }
         );
+        console.log(result.data.user, result.data.token);
+        login(result.data.user, result.data.token);
         toast.success("Successfully signed in with Google", {
           onClose: () => navigate("/Home"),
           autoClose: 3000,
         });
-        localStorage.setItem("user", JSON.stringify(result.data.user));
       } catch (error) {
         toast.error(error.response?.data?.message || "Google sign-in failed");
       }
     };
   }, [navigate]);
+
   function SwitchLoginSignup() {
     setIsLogin(!isLogin);
   }
@@ -52,11 +57,11 @@ export default function LoginSignup() {
         password,
       })
       .then((res) => {
+        login(res.data.user, res.data.token);
         toast.success(res.data.message, {
           onClose: () => navigate("/Home"),
           autoClose: 3000,
         });
-        localStorage.setItem("user", JSON.stringify(res.data.newUser));
       })
       .catch((err) => {
         toast.error(err.response?.data?.message || "Signup failed");
@@ -71,11 +76,11 @@ export default function LoginSignup() {
         password,
       })
       .then((res) => {
+        login(res.data.user, res.data.token);
         toast.success(res.data.message, {
           onClose: () => navigate("/Home"),
           autoClose: 3000,
         });
-        localStorage.setItem("user", JSON.stringify(res.data.user));
       })
       .catch((err) => {
         toast.error(err.response?.data?.message || "Login failed");
@@ -85,7 +90,7 @@ export default function LoginSignup() {
     <div>
       {!isLogin ? (
         <div>
-          <h1>Signup</h1>
+          <h1 className="text-blue-300">Signup</h1>
           <form onSubmit={handleSignup}>
             <label>Username</label>
             <input
