@@ -48,7 +48,9 @@ const registerUser = async (req, res) => {
     // Check if user already exists
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
+      return res
+        .status(400)
+        .json({ message: "An account with this email already exists" });
     }
 
     const saltRounds = 10;
