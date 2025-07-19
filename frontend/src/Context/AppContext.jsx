@@ -10,27 +10,38 @@ export const AppContext = createContext({
 export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [isOpen, setIsOpen] = useState(true);
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
+
+    if (storedUser && storedToken) {
+      setUser(JSON.parse(storedUser));
+      setToken(storedToken);
+    }
+  }, []);
 
   const login = (user, authtoken) => {
     console.log("in context", user, authtoken);
     setUser(user);
     setToken(authtoken);
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("token", authtoken);
   };
   const logout = () => {
     setUser(null);
     setToken(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem("token", token);
-    } else {
-      localStorage.removeItem("token");
-    }
-  }, [token]);
-
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
   return (
-    <AppContext.Provider value={{ user, token, login, logout }}>
+    <AppContext.Provider
+      value={{ user, token, login, logout, isOpen, toggleSidebar }}
+    >
       {children}
     </AppContext.Provider>
   );
