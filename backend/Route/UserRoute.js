@@ -4,7 +4,6 @@ import {
   registerUser,
   googleSignIn,
 } from "../Controller/UserController.js";
-import { authenticateToken } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
 

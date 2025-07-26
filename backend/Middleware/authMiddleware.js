@@ -1,18 +1,23 @@
 import { verifyJWTToken } from "../Config/jwt.js";
 
-export const authenticateToken = async (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   try {
-    const { token } = req.headers.Authorization;
-    if (!token) {
-      return res.status(401).json({ message: "no token provided" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "No token provided" });
     }
-    if (!verifyJWTToken(token)) {
-      return res.status(403).json({ message: "invalid token" });
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const decoded = verifyJWTToken(token);
+
+    if (!decoded) {
+      return res.status(403).json({ message: "Invalid token" });
     }
-    return res.status(200).json({ message: "token is valid" });
+
+    req.user = decoded;
+    next();
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "unable to authorize user" });
+    console.error("Auth middleware error:", error);
+    return res.status(500).json({ message: "Unable to authorize user" });
   }
-  next();
 };

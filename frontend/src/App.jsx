@@ -4,6 +4,15 @@ import Home from "./Pages/Home.jsx";
 import LoginSignup from "./Pages/LoginSignup.jsx";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./Context/AppContext.jsx";
+import AlChat from "./Pages/AlChat.jsx";
+import LatestJobs from "./Pages/LatestJobs.jsx";
+import SkillsInformation from "./Pages/SkillsInformation.jsx";
+import CareerRoadmap from "./Pages/CareerRoadmap.jsx";
+import ResumeBuilder from "./Pages/ResumeBuilder.jsx";
+import Mentorship from "./Pages/Mentorship.jsx";
+import SkillGapAnalyzer from "./Pages/SkillGapAnalyzer.jsx";
+import MockInterview from "./Pages/MockInterview.jsx";
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
   return (
@@ -12,8 +21,17 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LoginSignup />} />
           <Route path="/Home" element={<Home />} />
+          <Route path="/AlChat" element={<AlChat />} />
+          <Route path="/LatestJobs" element={<LatestJobs />} />
+          <Route path="/SkillsInformation" element={<SkillsInformation />} />
+          <Route path="/CareerRoadmap" element={<CareerRoadmap />} />
+          <Route path="/ResumeBuilder" element={<ResumeBuilder />} />
+          <Route path="/Mentorship" element={<Mentorship />} />
+          <Route path="/SkillGapAnalyzer" element={<SkillGapAnalyzer />} />
+          <Route path="/MockInterview" element={<MockInterview />} />
         </Routes>
       </BrowserRouter>
+      <Toaster position="top-right" />
     </AppProvider>
   );
 }
