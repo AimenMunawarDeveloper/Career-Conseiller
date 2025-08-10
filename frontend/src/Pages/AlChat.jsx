@@ -10,7 +10,15 @@ import { toast } from "react-hot-toast";
 
 export default function AlChat() {
   const { isOpen } = useApp();
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    {
+      id: Date.now(),
+      content:
+        "Hello! I'm CareerBot, your AI career counselor. I'm here to help you with resume advice, interview tips, career path exploration, and more. How can I assist you today?",
+      role: "assistant",
+      timestamp: new Date().toISOString(),
+    },
+  ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -35,6 +43,7 @@ export default function AlChat() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentMessage = inputMessage;
     setInputMessage("");
     setIsLoading(true);
 
@@ -43,7 +52,7 @@ export default function AlChat() {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/ai/chat`,
         {
-          message: inputMessage,
+          message: currentMessage,
           context: {
             history: messages.slice(-10).map((msg) => ({
               role: msg.role,

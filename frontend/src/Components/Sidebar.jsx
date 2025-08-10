@@ -63,15 +63,6 @@ export default function Sidebar() {
             <MdDescription className="text-2xl flex-shrink-0" />
             <div className="text-xl truncate">Resume Builder</div>
           </div>
-
-          <div
-            className="w-full flex items-center gap-4 hover:bg-purple-600 rounded-md p-2 cursor-pointer"
-            onClick={() => navigate("/Mentorship")}
-          >
-            <MdPeople className="text-2xl flex-shrink-0" />
-            <div className="text-xl truncate">Mentorship</div>
-          </div>
-
           <div
             className="w-full flex items-center gap-4 hover:bg-purple-600 rounded-md p-2 cursor-pointer"
             onClick={() => navigate("/LatestJobs")}

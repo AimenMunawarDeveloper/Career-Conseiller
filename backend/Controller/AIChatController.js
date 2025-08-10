@@ -1,31 +1,51 @@
-// AI Chat Controller with Hugging Face API integration
+// AI Chat Controller with Gemini AI integration
 import CareerRoadmap from "../Model/CareerRoadmapModel.js";
-import axios from "axios";
-import { OpenAI } from "openai";
-// Hugging Face API configuration
-const HF_API_URL = "https://api-inference.huggingface.co/models/";
-import { AutoTokenizer, AutoModelForCausalLM } from "@xenova/transformers";
+import { createChatSession, sendMessage } from "./GeminiService.js";
 
-const generateAIResponse = async (message) => {
+// Chat sessions storage (in production, use Redis or database)
+const chatSessions = new Map();
+
+// Initialize the AI model
+async function initializeModel() {
   try {
-    const tokenizer = await AutoTokenizer.from_pretrained("Xenova/gpt2");
-    const model = await AutoModelForCausalLM.from_pretrained("Xenova/gpt2");
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    console.log("Checking GEMINI_API_KEY:", GEMINI_API_KEY ? "SET" : "NOT SET");
 
-    const inputs = await tokenizer(message, { return_tensors: "pt" });
+    if (!GEMINI_API_KEY) {
+      throw new Error(
+        "Gemini API key not found. Please set GEMINI_API_KEY in your .env file"
+      );
+    }
+    console.log("Gemini API configured successfully");
+    return true;
+  } catch (error) {
+    console.error("Error initializing Gemini API:", error);
+    throw error;
+  }
+}
 
-    const output = await model.generate(inputs.input_ids, {
-      max_new_tokens: 50,
-    });
+// Generate AI response using Gemini API
+const generateAIResponse = async (message, userId) => {
+  try {
+    await initializeModel();
 
-    const response = await tokenizer.decode(output[0], {
-      skip_special_tokens: true,
-    });
+    // Get or create chat session for user
+    let chatSession = chatSessions.get(userId);
+    if (!chatSession) {
+      chatSession = createChatSession();
+      chatSessions.set(userId, chatSession);
+    }
 
-    console.log("AI response:", response);
+    console.log("Generating response for:", message);
+
+    // Send message to Gemini
+    const response = await sendMessage(chatSession, message);
+    console.log("Gemini response:", response);
+
     return response;
   } catch (error) {
-    console.error("Failed to generate local response:", error.message);
-    return "Sorry, I couldn't generate a response at this time.";
+    console.error("AI Response Generation Error:", error);
+    return `I understand you're asking about "${message}". As your AI career counselor, I can help with career planning, skill development, resume writing, interview preparation, and networking. What specific aspect would you like to discuss?`;
   }
 };
 
@@ -114,13 +134,14 @@ const INTERVIEW_QUESTIONS = {
 export const chatWithAI = async (req, res) => {
   try {
     const { message, context = {} } = req.body;
+    const userId = req.user?.payload?.id || req.user?.id || "anonymous";
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // Generate AI response using the Hugging Face model
-    const response = await generateAIResponse(message);
+    // Generate AI response using Gemini
+    const response = await generateAIResponse(message, userId);
 
     res.json({
       success: true,
@@ -424,40 +445,22 @@ export const getMockInterviewQuestions = async (req, res) => {
 
     if (role && role !== "general") {
       try {
-        const HF_API_KEY = await initializeModel();
-        const prompt = `Generate 5 specific interview questions for ${role} role:`;
+        const userId = req.user?.payload?.id || req.user?.id || "anonymous";
+        const chatSession = chatSessions.get(userId) || createChatSession();
+        chatSessions.set(userId, chatSession);
 
-        const result = await axios.post(
-          `${HF_API_URL}microsoft/DialoGPT-medium`,
-          {
-            inputs: prompt,
-            parameters: {
-              max_new_tokens: 200,
-              temperature: 0.7,
-              do_sample: true,
-            },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${HF_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const prompt = `Generate 5 specific interview questions for ${role} role. Return only the questions, one per line, without numbering:`;
 
-        let aiResponse = result.data[0]?.generated_text || "";
-
-        // Clean up the response
-        if (aiResponse.includes(prompt)) {
-          aiResponse = aiResponse.substring(prompt.length).trim();
-        }
+        const aiResponse = await sendMessage(chatSession, prompt);
+        console.log("AI-generated questions response:", aiResponse);
 
         const lines = aiResponse
           .split("\n")
           .filter(
             (line) =>
               line.trim().length > 15 &&
-              !line.includes("Generate interview questions")
+              !line.includes("Generate") &&
+              !line.includes("interview questions")
           )
           .map((line) => line.replace(/^\d+\.\s*/, "").trim());
 
@@ -528,50 +531,56 @@ export const provideInterviewFeedback = async (req, res) => {
     };
 
     try {
-      const HF_API_KEY = await initializeModel();
-      const prompt = `Provide constructive feedback on this interview response:
+      const userId = req.user?.payload?.id || req.user?.id || "anonymous";
+      const chatSession = chatSessions.get(userId) || createChatSession();
+      chatSessions.set(userId, chatSession);
+
+      const prompt = `Provide constructive feedback on this interview response. Format your response as:
+Strengths: [list 2-3 strengths]
+Areas for Improvement: [list 2-3 areas]
+Suggestions: [list 2-3 specific suggestions]
+Overall Feedback: [1-2 sentence summary]
 
 Question: ${question}
-Answer: ${answer}
+Answer: ${answer}`;
 
-Feedback:`;
-
-      const result = await axios.post(
-        `${HF_API_URL}microsoft/DialoGPT-medium`,
-        {
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 200,
-            temperature: 0.7,
-            do_sample: true,
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${HF_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      let aiResponse = result.data[0]?.generated_text || "";
+      const aiResponse = await sendMessage(chatSession, prompt);
       console.log("AI feedback response:", aiResponse);
 
-      // Clean up the response
-      if (aiResponse.includes(prompt)) {
-        const feedbackText = aiResponse.substring(prompt.length).trim();
+      // Parse the structured response
+      const lines = aiResponse.split("\n");
+      let currentSection = "";
 
-        // Simple parsing - look for common feedback patterns
-        const sentences = feedbackText
-          .split(/[.!?]+/)
-          .filter((s) => s.trim().length > 10);
-
-        if (sentences.length >= 2) {
-          feedback.strengths = [sentences[0].trim()];
-          feedback.areasForImprovement = [sentences[1].trim()];
-          feedback.overallFeedback = sentences.slice(0, 2).join(". ") + ".";
+      lines.forEach((line) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine.toLowerCase().includes("strengths:")) {
+          currentSection = "strengths";
+        } else if (
+          trimmedLine.toLowerCase().includes("areas for improvement:")
+        ) {
+          currentSection = "areasForImprovement";
+        } else if (trimmedLine.toLowerCase().includes("suggestions:")) {
+          currentSection = "suggestions";
+        } else if (trimmedLine.toLowerCase().includes("overall feedback:")) {
+          currentSection = "overallFeedback";
+        } else if (
+          trimmedLine &&
+          currentSection &&
+          !trimmedLine.includes(":")
+        ) {
+          if (currentSection === "overallFeedback") {
+            feedback.overallFeedback = trimmedLine;
+          } else if (
+            trimmedLine.startsWith("-") ||
+            trimmedLine.startsWith("•")
+          ) {
+            const item = trimmedLine.replace(/^[-•]\s*/, "").trim();
+            if (item) {
+              feedback[currentSection].push(item);
+            }
+          }
         }
-      }
+      });
 
       // Fallback if parsing failed
       if (feedback.strengths.length === 0) {
