@@ -1,5 +1,5 @@
 import CareerRoadmap from "../Model/CareerRoadmapModel.js";
-import { generateCareerRoadmap } from "./AIChatController.js";
+import { generateRoadmapData } from "./AIChatController.js";
 
 export const createCareerRoadmap = async (req, res) => {
   try {
@@ -9,9 +9,25 @@ export const createCareerRoadmap = async (req, res) => {
       interests,
       targetRole,
       experienceLevel,
+      resumeContent,
+      preferredIndustry,
+      salaryExpectations,
+      workStyle,
+      locationPreferences,
+      timeline,
     } = req.body;
 
-    const userId = req.user.id; // Assuming auth middleware sets this
+    const userId = req.user?.payload?.id; // JWT token structure: { payload: { id, email, username } }
+
+    // Debug logging
+    console.log("Request user object:", req.user);
+    console.log("Extracted userId:", userId);
+
+    if (!userId) {
+      return res.status(401).json({
+        error: "User ID not found. Please ensure you are authenticated.",
+      });
+    }
 
     // Check if user already has a roadmap
     const existingRoadmap = await CareerRoadmap.findOne({ userId });
@@ -23,18 +39,98 @@ export const createCareerRoadmap = async (req, res) => {
     }
 
     // Generate AI-powered roadmap
-    const aiResponse = await generateCareerRoadmap(req, res);
+    console.log("Generating roadmap for user:", userId);
+    const roadmapData = await generateRoadmapData(req.body, userId);
+    console.log("Roadmap data generated:", roadmapData ? "Success" : "Failed");
 
-    // Parse the AI response to extract structured data
-    const roadmapData = parseRoadmapResponse(aiResponse.roadmap);
+    // Ensure roadmap data is properly structured
+    if (!roadmapData || typeof roadmapData !== "object") {
+      console.error("Invalid roadmap data received:", roadmapData);
+      return res.status(500).json({
+        error: "Failed to generate roadmap data",
+        details: "Invalid roadmap structure received from AI",
+      });
+    }
+
+    // Clean up any invalid enum values in networkingOpportunities
+    if (roadmapData.networkingOpportunities) {
+      roadmapData.networkingOpportunities.forEach((opportunity) => {
+        if (
+          opportunity.type &&
+          !["event", "platform", "organization", "conference"].includes(
+            opportunity.type
+          )
+        ) {
+          console.log(
+            `Fixing invalid networking type: ${opportunity.type} -> event`
+          );
+          opportunity.type = "event";
+        }
+      });
+    }
+
+    // Clean up experience level to match expected format
+    let cleanExperienceLevel = experienceLevel;
+    if (experienceLevel) {
+      const levelMap = {
+        "entry-level": "entry",
+        "Entry-level": "entry",
+        "Entry Level": "entry",
+        "entry level": "entry",
+        "mid-level": "mid",
+        "Mid-level": "mid",
+        "Mid Level": "mid",
+        "mid level": "mid",
+        "senior-level": "senior",
+        "Senior-level": "senior",
+        "Senior Level": "senior",
+        "senior level": "senior",
+        "expert-level": "expert",
+        "Expert-level": "expert",
+        "Expert Level": "expert",
+        "expert level": "expert",
+      };
+      cleanExperienceLevel = levelMap[experienceLevel] || experienceLevel;
+    }
+
+    // Clean up roadmap data enum values
+    if (roadmapData.skillsToDevelop) {
+      roadmapData.skillsToDevelop.forEach((skill) => {
+        if (skill.currentLevel) {
+          const level = skill.currentLevel.split(" ")[0].toLowerCase(); // Take first word only
+          if (["beginner", "intermediate", "advanced"].includes(level)) {
+            skill.currentLevel = level;
+          } else {
+            skill.currentLevel = "beginner";
+          }
+        }
+        if (skill.targetLevel) {
+          const level = skill.targetLevel.split(" ")[0].toLowerCase(); // Take first word only
+          if (["intermediate", "advanced", "expert"].includes(level)) {
+            skill.targetLevel = level;
+          } else {
+            skill.targetLevel = "intermediate";
+          }
+        }
+      });
+    }
+
+    console.log("Creating roadmap with userId:", userId);
+    console.log("Experience level:", cleanExperienceLevel);
 
     const roadmap = new CareerRoadmap({
       userId,
       currentEducation,
-      currentSkills,
-      interests,
+      currentSkills: currentSkills.split(",").map((skill) => skill.trim()),
+      interests: interests.split(",").map((interest) => interest.trim()),
       targetRole,
-      experienceLevel,
+      experienceLevel: cleanExperienceLevel,
+      resumeContent,
+      preferredIndustry,
+      salaryExpectations,
+      workStyle,
+      locationPreferences,
+      timeline,
       roadmap: roadmapData,
     });
 
@@ -57,7 +153,7 @@ export const createCareerRoadmap = async (req, res) => {
 
 export const getCareerRoadmap = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
 
     const roadmap = await CareerRoadmap.findOne({ userId });
 
@@ -84,7 +180,7 @@ export const getCareerRoadmap = async (req, res) => {
 
 export const updateCareerRoadmap = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
     const updateData = req.body;
 
     const roadmap = await CareerRoadmap.findOne({ userId });
@@ -99,11 +195,26 @@ export const updateCareerRoadmap = async (req, res) => {
     if (updateData.currentEducation)
       roadmap.currentEducation = updateData.currentEducation;
     if (updateData.currentSkills)
-      roadmap.currentSkills = updateData.currentSkills;
-    if (updateData.interests) roadmap.interests = updateData.interests;
+      roadmap.currentSkills = updateData.currentSkills
+        .split(",")
+        .map((skill) => skill.trim());
+    if (updateData.interests)
+      roadmap.interests = updateData.interests
+        .split(",")
+        .map((interest) => interest.trim());
     if (updateData.targetRole) roadmap.targetRole = updateData.targetRole;
     if (updateData.experienceLevel)
       roadmap.experienceLevel = updateData.experienceLevel;
+    if (updateData.resumeContent)
+      roadmap.resumeContent = updateData.resumeContent;
+    if (updateData.preferredIndustry)
+      roadmap.preferredIndustry = updateData.preferredIndustry;
+    if (updateData.salaryExpectations)
+      roadmap.salaryExpectations = updateData.salaryExpectations;
+    if (updateData.workStyle) roadmap.workStyle = updateData.workStyle;
+    if (updateData.locationPreferences)
+      roadmap.locationPreferences = updateData.locationPreferences;
+    if (updateData.timeline) roadmap.timeline = updateData.timeline;
 
     // Update specific roadmap items
     if (updateData.roadmap) {
@@ -151,7 +262,7 @@ export const updateCareerRoadmap = async (req, res) => {
 
 export const markGoalComplete = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
     const { goalType, goalIndex, completed } = req.body;
 
     const roadmap = await CareerRoadmap.findOne({ userId });
@@ -211,7 +322,7 @@ export const markGoalComplete = async (req, res) => {
 
 export const regenerateRoadmap = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
 
     const roadmap = await CareerRoadmap.findOne({ userId });
 
@@ -222,8 +333,46 @@ export const regenerateRoadmap = async (req, res) => {
     }
 
     // Generate new AI-powered roadmap
-    const aiResponse = await generateCareerRoadmap(req, res);
-    const newRoadmapData = parseRoadmapResponse(aiResponse.roadmap);
+    const newRoadmapData = await generateRoadmapData(req.body, userId);
+
+    // Clean up any invalid enum values in networkingOpportunities
+    if (newRoadmapData.networkingOpportunities) {
+      newRoadmapData.networkingOpportunities.forEach((opportunity) => {
+        if (
+          opportunity.type &&
+          !["event", "platform", "organization", "conference"].includes(
+            opportunity.type
+          )
+        ) {
+          console.log(
+            `Fixing invalid networking type: ${opportunity.type} -> event`
+          );
+          opportunity.type = "event";
+        }
+      });
+    }
+
+    // Clean up roadmap data enum values
+    if (newRoadmapData.skillsToDevelop) {
+      newRoadmapData.skillsToDevelop.forEach((skill) => {
+        if (skill.currentLevel) {
+          const level = skill.currentLevel.split(" ")[0].toLowerCase(); // Take first word only
+          if (["beginner", "intermediate", "advanced"].includes(level)) {
+            skill.currentLevel = level;
+          } else {
+            skill.currentLevel = "beginner";
+          }
+        }
+        if (skill.targetLevel) {
+          const level = skill.targetLevel.split(" ")[0].toLowerCase(); // Take first word only
+          if (["intermediate", "advanced", "expert"].includes(level)) {
+            skill.targetLevel = level;
+          } else {
+            skill.targetLevel = "intermediate";
+          }
+        }
+      });
+    }
 
     // Update roadmap with new AI-generated content
     roadmap.roadmap = newRoadmapData;
@@ -248,6 +397,11 @@ export const regenerateRoadmap = async (req, res) => {
 
 // Helper function to parse AI response into structured data
 function parseRoadmapResponse(aiResponse) {
+  // If aiResponse is already an object (from JSON.parse), return it directly
+  if (typeof aiResponse === "object" && aiResponse !== null) {
+    return aiResponse;
+  }
+
   // This is a simplified parser - in production, you'd want more robust parsing
   const roadmap = {
     shortTermGoals: [],
@@ -257,6 +411,12 @@ function parseRoadmapResponse(aiResponse) {
     skillsToDevelop: [],
     networkingOpportunities: [],
     targetJobTitles: [],
+    industryInsights: {
+      trends: [],
+      growthAreas: [],
+      challenges: [],
+    },
+    personalizedAdvice: "",
   };
 
   // Extract goals from AI response
@@ -291,12 +451,21 @@ function parseRoadmapResponse(aiResponse) {
       const goal = trimmedLine.replace(/^[-•\d\.\s]+/, "").trim();
       if (goal && currentSection && roadmap[currentSection]) {
         if (currentSection === "targetJobTitles") {
-          roadmap[currentSection].push({ title: goal, priority: "medium" });
+          roadmap[currentSection].push({
+            title: goal,
+            priority: "medium",
+            salaryRange: "",
+            requiredSkills: [],
+            companies: [],
+          });
         } else if (currentSection === "skillsToDevelop") {
           roadmap[currentSection].push({
             skill: goal,
             priority: "medium",
             completed: false,
+            currentLevel: "beginner",
+            targetLevel: "intermediate",
+            resources: [],
           });
         } else if (currentSection === "courses") {
           roadmap[currentSection].push({
@@ -304,18 +473,25 @@ function parseRoadmapResponse(aiResponse) {
             provider: "",
             url: "",
             completed: false,
+            duration: "",
+            cost: "",
+            skillsCovered: [],
           });
         } else if (currentSection === "networkingOpportunities") {
           roadmap[currentSection].push({
             opportunity: goal,
             type: "event",
             completed: false,
+            frequency: "",
+            estimatedCost: "",
           });
         } else {
           roadmap[currentSection].push({
             goal,
             timeline: "",
             completed: false,
+            priority: "medium",
+            estimatedEffort: "",
           });
         }
       }

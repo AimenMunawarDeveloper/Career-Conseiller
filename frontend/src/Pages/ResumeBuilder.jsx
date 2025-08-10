@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "../Components/Sidebar";
-import TopBar from "../Components/TopBar";
-import { useApp } from "../Context/AppContext";
+import Layout from "../Components/Layout";
 import { BsPlus, BsTrash, BsDownload, BsEye, BsShare } from "react-icons/bs";
 import { MdEdit, MdAnalytics } from "react-icons/md";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
 export default function ResumeBuilder() {
-  const { isOpen } = useApp();
   const [resumes, setResumes] = useState([]);
   const [selectedResume, setSelectedResume] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -119,7 +116,9 @@ export default function ResumeBuilder() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/resume/${selectedResume._id}/analyze`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/resume/${
+          selectedResume._id
+        }/analyze`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -140,7 +139,9 @@ export default function ResumeBuilder() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/resume/${selectedResume._id}/pdf`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/resume/${
+          selectedResume._id
+        }/pdf`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -166,7 +167,9 @@ export default function ResumeBuilder() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.patch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/resume/${selectedResume._id}/public`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/resume/${
+          selectedResume._id
+        }/public`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -653,24 +656,5 @@ export default function ResumeBuilder() {
     </div>
   );
 
-  return (
-    <div className="w-full h-screen flex flex-row">
-      {isOpen ? (
-        <div className="w-full h-screen flex flex-row">
-          <div className="w-1/5 h-screen">
-            <Sidebar />
-          </div>
-          <div className="w-4/5 h-screen flex flex-col">
-            <TopBar />
-            {mainContent}
-          </div>
-        </div>
-      ) : (
-        <div className="w-full h-screen flex flex-col">
-          <TopBar />
-          {mainContent}
-        </div>
-      )}
-    </div>
-  );
+  return <Layout>{mainContent}</Layout>;
 }

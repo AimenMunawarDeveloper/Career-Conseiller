@@ -27,8 +27,26 @@ const careerRoadmapSchema = new mongoose.Schema(
     },
     experienceLevel: {
       type: String,
-      enum: ["entry", "mid", "senior", "expert"],
       default: "entry",
+    },
+    resumeContent: {
+      type: String,
+    },
+    preferredIndustry: {
+      type: String,
+    },
+    salaryExpectations: {
+      type: String,
+    },
+         workStyle: {
+       type: String,
+       default: "flexible",
+     },
+    locationPreferences: {
+      type: String,
+    },
+    timeline: {
+      type: String,
     },
     roadmap: {
       shortTermGoals: [
@@ -37,6 +55,11 @@ const careerRoadmapSchema = new mongoose.Schema(
           timeline: String,
           completed: { type: Boolean, default: false },
           completedDate: Date,
+          priority: {
+            type: String,
+            default: "medium",
+          },
+          estimatedEffort: String,
         },
       ],
       mediumTermGoals: [
@@ -45,6 +68,11 @@ const careerRoadmapSchema = new mongoose.Schema(
           timeline: String,
           completed: { type: Boolean, default: false },
           completedDate: Date,
+          priority: {
+            type: String,
+            default: "medium",
+          },
+          estimatedEffort: String,
         },
       ],
       longTermGoals: [
@@ -53,6 +81,11 @@ const careerRoadmapSchema = new mongoose.Schema(
           timeline: String,
           completed: { type: Boolean, default: false },
           completedDate: Date,
+          priority: {
+            type: String,
+            default: "medium",
+          },
+          estimatedEffort: String,
         },
       ],
       courses: [
@@ -62,6 +95,9 @@ const careerRoadmapSchema = new mongoose.Schema(
           url: String,
           completed: { type: Boolean, default: false },
           completedDate: Date,
+          duration: String,
+          cost: String,
+          skillsCovered: [String],
         },
       ],
       skillsToDevelop: [
@@ -69,19 +105,32 @@ const careerRoadmapSchema = new mongoose.Schema(
           skill: String,
           priority: {
             type: String,
-            enum: ["low", "medium", "high"],
             default: "medium",
           },
           completed: { type: Boolean, default: false },
           completedDate: Date,
+          currentLevel: {
+            type: String,
+            default: "beginner",
+          },
+          targetLevel: {
+            type: String,
+            default: "intermediate",
+          },
+          resources: [String],
         },
       ],
       networkingOpportunities: [
         {
           opportunity: String,
-          type: { type: String, enum: ["event", "platform", "organization"] },
+          type: {
+            type: String,
+            default: "event",
+          },
           completed: { type: Boolean, default: false },
           completedDate: Date,
+          frequency: String,
+          estimatedCost: String,
         },
       ],
       targetJobTitles: [
@@ -89,11 +138,19 @@ const careerRoadmapSchema = new mongoose.Schema(
           title: String,
           priority: {
             type: String,
-            enum: ["low", "medium", "high"],
             default: "medium",
           },
+          salaryRange: String,
+          requiredSkills: [String],
+          companies: [String],
         },
       ],
+      industryInsights: {
+        trends: [String],
+        growthAreas: [String],
+        challenges: [String],
+      },
+      personalizedAdvice: String,
     },
     progress: {
       shortTermProgress: { type: Number, default: 0 },

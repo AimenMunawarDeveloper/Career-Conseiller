@@ -1,5 +1,6 @@
 // AI Chat Controller with Gemini AI integration
 import CareerRoadmap from "../Model/CareerRoadmapModel.js";
+import ChatHistory from "../Model/ChatHistoryModel.js";
 import { createChatSession, sendMessage } from "./GeminiService.js";
 
 // Chat sessions storage (in production, use Redis or database)
@@ -25,7 +26,12 @@ async function initializeModel() {
 }
 
 // Generate AI response using Gemini API
-const generateAIResponse = async (message, userId) => {
+const generateAIResponse = async (
+  message,
+  userId,
+  sessionId = null,
+  fileContext = null
+) => {
   try {
     await initializeModel();
 
@@ -38,9 +44,28 @@ const generateAIResponse = async (message, userId) => {
 
     console.log("Generating response for:", message);
 
+    // Prepare the message with file context if available
+    let fullMessage = message;
+    if (fileContext && fileContext.extractedText) {
+      fullMessage = `User uploaded a file (${fileContext.fileName}) with the following content:\n\n${fileContext.extractedText}\n\nUser's question: ${message}`;
+    }
+
     // Send message to Gemini
-    const response = await sendMessage(chatSession, message);
+    const response = await sendMessage(chatSession, fullMessage);
     console.log("Gemini response:", response);
+
+    // Save messages to database if sessionId is provided
+    if (sessionId) {
+      try {
+        const dbSession = await ChatHistory.getSession(sessionId, userId);
+        if (dbSession) {
+          await dbSession.addMessage("user", message);
+          await dbSession.addMessage("assistant", response);
+        }
+      } catch (error) {
+        console.error("Error saving messages to database:", error);
+      }
+    }
 
     return response;
   } catch (error) {
@@ -133,19 +158,56 @@ const INTERVIEW_QUESTIONS = {
 
 export const chatWithAI = async (req, res) => {
   try {
-    const { message, context = {} } = req.body;
+    const {
+      message,
+      context = {},
+      sessionId = null,
+      fileData = null,
+    } = req.body;
     const userId = req.user?.payload?.id || req.user?.id || "anonymous";
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
 
+    // If no sessionId provided, create a new session
+    let currentSessionId = sessionId;
+    if (!currentSessionId) {
+      try {
+        const newSession = await ChatHistory.createSession(userId, "New Chat");
+        currentSessionId = newSession.sessionId;
+
+        // Update the session title based on the first message
+        const title =
+          message.length > 30 ? message.substring(0, 30) + "..." : message;
+        await ChatHistory.updateTitle(currentSessionId, userId, title);
+      } catch (error) {
+        console.error("Error creating new chat session:", error);
+      }
+    }
+
+    // Prepare file context if file data is provided
+    let fileContext = null;
+    if (fileData && fileData.extractedText) {
+      fileContext = {
+        fileName: fileData.originalName,
+        extractedText: fileData.extractedText,
+        textLength: fileData.textLength,
+      };
+    }
+
     // Generate AI response using Gemini
-    const response = await generateAIResponse(message, userId);
+    const response = await generateAIResponse(
+      message,
+      userId,
+      currentSessionId,
+      fileContext
+    );
 
     res.json({
       success: true,
       response,
+      sessionId: currentSessionId,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -158,7 +220,8 @@ export const chatWithAI = async (req, res) => {
 };
 
 // Generate personalized career roadmap
-export const generateCareerRoadmap = async (req, res) => {
+// Internal function to generate roadmap data (for use by other controllers)
+export const generateRoadmapData = async (userData, userId) => {
   try {
     const {
       currentEducation,
@@ -166,115 +229,259 @@ export const generateCareerRoadmap = async (req, res) => {
       interests,
       targetRole,
       experienceLevel = "entry",
-    } = req.body;
+      resumeContent,
+      preferredIndustry,
+      salaryExpectations,
+      workStyle,
+      locationPreferences,
+      timeline,
+    } = userData;
 
     if (!currentEducation || !currentSkills || !interests) {
-      return res
-        .status(400)
-        .json({ error: "Education, skills, and interests are required" });
+      throw new Error("Education, skills, and interests are required");
     }
 
-    // Generate roadmap based on input
-    const roadmap = {
-      shortTermGoals: [
-        {
-          goal: "Complete relevant online courses",
-          timeline: "3-6 months",
-          completed: false,
+    // Create a comprehensive prompt for Gemini AI
+    let prompt = `As an expert career counselor, create a detailed and personalized career roadmap for a professional with the following profile:
+
+Current Education: ${currentEducation}
+Current Skills: ${currentSkills}
+Career Interests: ${interests}
+Target Role: ${targetRole || "Not specified"}
+Experience Level: ${experienceLevel}
+${resumeContent ? `Resume Content: ${resumeContent}` : ""}
+${preferredIndustry ? `Preferred Industry: ${preferredIndustry}` : ""}
+${salaryExpectations ? `Salary Expectations: ${salaryExpectations}` : ""}
+${workStyle ? `Work Style Preference: ${workStyle}` : ""}
+${locationPreferences ? `Location Preferences: ${locationPreferences}` : ""}
+${timeline ? `Preferred Timeline: ${timeline}` : ""}
+
+Please provide a comprehensive career roadmap in the following JSON format:
+
+{
+  "shortTermGoals": [
+    {
+      "goal": "specific actionable goal",
+      "timeline": "3-6 months",
+      "completed": false,
+      "priority": "high/medium/low",
+      "estimatedEffort": "hours per week"
+    }
+  ],
+  "mediumTermGoals": [
+    {
+      "goal": "specific actionable goal", 
+      "timeline": "6-12 months",
+      "completed": false,
+      "priority": "high/medium/low",
+      "estimatedEffort": "hours per week"
+    }
+  ],
+  "longTermGoals": [
+    {
+      "goal": "specific actionable goal",
+      "timeline": "1-3 years", 
+      "completed": false,
+      "priority": "high/medium/low",
+      "estimatedEffort": "hours per week"
+    }
+  ],
+  "courses": [
+    {
+      "name": "course name",
+      "provider": "platform/organization",
+      "url": "course URL if available",
+      "completed": false,
+      "duration": "estimated duration",
+      "cost": "estimated cost",
+      "skillsCovered": ["skill1", "skill2"]
+    }
+  ],
+  "skillsToDevelop": [
+    {
+      "skill": "skill name",
+      "priority": "high/medium/low",
+      "completed": false,
+      "currentLevel": "beginner/intermediate/advanced",
+      "targetLevel": "intermediate/advanced/expert",
+      "resources": ["resource1", "resource2"]
+    }
+  ],
+  "networkingOpportunities": [
+    {
+      "opportunity": "specific opportunity",
+      "type": "event/organization/platform/conference",
+      "completed": false,
+      "frequency": "weekly/monthly/quarterly",
+      "estimatedCost": "cost if any"
+    }
+  ],
+  "targetJobTitles": [
+    {
+      "title": "job title",
+      "priority": "high/medium/low",
+      "salaryRange": "estimated salary range",
+      "requiredSkills": ["skill1", "skill2"],
+      "companies": ["company1", "company2"]
+    }
+  ],
+  "industryInsights": {
+    "trends": ["trend1", "trend2"],
+    "growthAreas": ["area1", "area2"],
+    "challenges": ["challenge1", "challenge2"]
+  },
+  "personalizedAdvice": "specific advice based on the profile"
+}
+
+IMPORTANT: For networkingOpportunities.type, only use these exact values: "event", "organization", "platform", or "conference". Do not use any other values like "community" or "event/community".
+
+Make sure the roadmap is:
+1. Highly personalized based on the provided information
+2. Actionable with specific, measurable goals
+3. Realistic given the current skills and experience level
+4. Includes industry-relevant recommendations
+5. Provides clear timelines and priorities
+6. Considers the resume content if provided
+7. Aligns with salary expectations and work preferences if specified
+
+Return only the JSON response without any additional text.`;
+
+    // Use Gemini AI to generate the roadmap
+    console.log("Sending prompt to Gemini AI for userId:", userId);
+    const aiResponse = await generateAIResponse(prompt, userId);
+    console.log(
+      "AI Response received, length:",
+      aiResponse ? aiResponse.length : 0
+    );
+
+    // Try to parse the JSON response
+    let roadmap;
+    try {
+      console.log("Attempting to parse AI response as JSON...");
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log("Found JSON match, parsing...");
+        roadmap = JSON.parse(jsonMatch[0]);
+      } else {
+        console.log("No JSON match found, trying to parse entire response...");
+        roadmap = JSON.parse(aiResponse);
+      }
+      console.log("JSON parsing successful");
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      console.log("Using fallback roadmap template");
+      // Fallback to a structured template if parsing fails
+      roadmap = {
+        shortTermGoals: [
+          {
+            goal: "Complete relevant online courses in your field",
+            timeline: "3-6 months",
+            completed: false,
+            priority: "high",
+            estimatedEffort: "5-10 hours per week",
+          },
+          {
+            goal: "Build a portfolio project showcasing your skills",
+            timeline: "3-6 months",
+            completed: false,
+            priority: "high",
+            estimatedEffort: "8-12 hours per week",
+          },
+          {
+            goal: "Network with professionals in your target industry",
+            timeline: "3-6 months",
+            completed: false,
+            priority: "medium",
+            estimatedEffort: "2-4 hours per week",
+          },
+        ],
+        mediumTermGoals: [
+          {
+            goal: "Gain practical experience through internships or freelance work",
+            timeline: "6-12 months",
+            completed: false,
+            priority: "high",
+            estimatedEffort: "15-20 hours per week",
+          },
+          {
+            goal: "Obtain relevant certifications for your target role",
+            timeline: "6-12 months",
+            completed: false,
+            priority: "medium",
+            estimatedEffort: "5-8 hours per week",
+          },
+        ],
+        longTermGoals: [
+          {
+            goal: "Secure your target role in the industry",
+            timeline: "1-2 years",
+            completed: false,
+            priority: "high",
+            estimatedEffort: "varies",
+          },
+        ],
+        courses: [
+          {
+            name: "Industry-specific certification course",
+            provider: "Professional Organization",
+            url: "",
+            completed: false,
+            duration: "3-6 months",
+            cost: "$500-2000",
+            skillsCovered: ["core skills", "industry knowledge"],
+          },
+        ],
+        skillsToDevelop: [
+          {
+            skill: "Technical skills relevant to your field",
+            priority: "high",
+            completed: false,
+            currentLevel: "beginner",
+            targetLevel: "intermediate",
+            resources: ["Online courses", "Practice projects"],
+          },
+        ],
+        networkingOpportunities: [
+          {
+            opportunity: "Join professional associations",
+            type: "organization",
+            completed: false,
+            frequency: "monthly",
+            estimatedCost: "$50-200/year",
+          },
+        ],
+        targetJobTitles: [
+          {
+            title: targetRole || "Your Target Role",
+            priority: "high",
+            salaryRange: "Industry standard",
+            requiredSkills: ["Core skills", "Industry knowledge"],
+            companies: ["Top companies in the field"],
+          },
+        ],
+        industryInsights: {
+          trends: ["Digital transformation", "Remote work"],
+          growthAreas: ["Technology", "Healthcare"],
+          challenges: ["Competition", "Skill requirements"],
         },
-        {
-          goal: "Build a portfolio project",
-          timeline: "3-6 months",
-          completed: false,
-        },
-        {
-          goal: "Network with professionals in your field",
-          timeline: "3-6 months",
-          completed: false,
-        },
-      ],
-      mediumTermGoals: [
-        {
-          goal: "Gain practical experience through internships or freelance",
-          timeline: "6-12 months",
-          completed: false,
-        },
-        {
-          goal: "Obtain relevant certifications",
-          timeline: "6-12 months",
-          completed: false,
-        },
-        {
-          goal: "Develop specialized skills in your target area",
-          timeline: "6-12 months",
-          completed: false,
-        },
-      ],
-      longTermGoals: [
-        {
-          goal: "Secure your target role",
-          timeline: "1-2 years",
-          completed: false,
-        },
-        {
-          goal: "Establish yourself as a subject matter expert",
-          timeline: "2-3 years",
-          completed: false,
-        },
-        {
-          goal: "Build a strong professional network",
-          timeline: "1-3 years",
-          completed: false,
-        },
-      ],
-      courses: [
-        {
-          name: "Industry-specific certification",
-          provider: "Professional Organization",
-          url: "",
-          completed: false,
-        },
-        {
-          name: "Online course in key skills",
-          provider: "Coursera/edX",
-          url: "",
-          completed: false,
-        },
-      ],
-      skillsToDevelop: [
-        {
-          skill: "Technical skills relevant to your field",
-          priority: "high",
-          completed: false,
-        },
-        {
-          skill: "Communication and presentation skills",
-          priority: "medium",
-          completed: false,
-        },
-        { skill: "Project management", priority: "medium", completed: false },
-      ],
-      networkingOpportunities: [
-        {
-          opportunity: "Join professional associations",
-          type: "organization",
-          completed: false,
-        },
-        {
-          opportunity: "Attend industry conferences",
-          type: "event",
-          completed: false,
-        },
-        {
-          opportunity: "Participate in online communities",
-          type: "platform",
-          completed: false,
-        },
-      ],
-      targetJobTitles: [
-        { title: targetRole || "Your Target Role", priority: "high" },
-      ],
-    };
+        personalizedAdvice:
+          "Focus on building practical experience and networking in your target industry.",
+      };
+    }
+
+    console.log("Roadmap generation completed successfully");
+    return roadmap;
+  } catch (error) {
+    console.error("Roadmap Generation Error:", error);
+    throw error;
+  }
+};
+
+// API endpoint for generating career roadmap
+export const generateCareerRoadmap = async (req, res) => {
+  try {
+    const roadmap = await generateRoadmapData(req.body);
 
     res.json({
       success: true,
@@ -289,6 +496,144 @@ export const generateCareerRoadmap = async (req, res) => {
     });
   }
 };
+
+// API endpoint for analyzing resume and auto-filling form fields
+export const analyzeResumeForAutoFill = async (req, res) => {
+  try {
+    const { resumeText } = req.body;
+
+    if (!resumeText) {
+      return res.status(400).json({
+        error: "Resume text is required",
+      });
+    }
+
+    const prompt = `Analyze the following resume text and extract key information to auto-fill a career roadmap form. Return the data in JSON format with the following fields:
+
+Resume Text:
+${resumeText}
+
+Please extract and return a JSON object with these fields:
+{
+  "currentEducation": "extracted education level and field",
+  "currentSkills": "comma-separated list of technical and soft skills",
+  "targetRole": "most suitable target role based on experience",
+  "experienceLevel": "entry/mid/senior/expert based on years of experience",
+  "preferredIndustry": "industry that best matches the background",
+  "interests": "career interests and goals inferred from the resume"
+}
+
+Focus on:
+1. Education: Look for degrees, certifications, institutions
+2. Skills: Extract technical skills, programming languages, tools, frameworks
+3. Experience: Determine appropriate experience level based on work history
+4. Target Role: Suggest the most suitable next role based on current experience
+5. Industry: Identify the primary industry or suggest relevant industries
+6. Interests: Infer career goals and interests from the resume content
+
+Return only the JSON object without any additional text.`;
+
+    const userId = req.user?.id || "temp";
+    const aiResponse = await generateAIResponse(prompt, userId);
+
+    // Try to parse the JSON response
+    let autoFilledData;
+    try {
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        autoFilledData = JSON.parse(jsonMatch[0]);
+      } else {
+        autoFilledData = JSON.parse(aiResponse);
+      }
+    } catch (parseError) {
+      console.error(
+        "Failed to parse AI response for resume analysis:",
+        parseError
+      );
+      // Fallback to basic extraction
+      autoFilledData = extractBasicInfoFromResume(resumeText);
+    }
+
+    res.json({
+      success: true,
+      autoFilledData,
+      message: "Resume analyzed successfully",
+    });
+  } catch (error) {
+    console.error("Resume Analysis Error:", error);
+    res.status(500).json({
+      error: "Failed to analyze resume",
+      details: error.message,
+    });
+  }
+};
+
+// Fallback function for basic resume parsing
+function extractBasicInfoFromResume(resumeText) {
+  const autoFilledData = {};
+
+  // Extract education
+  const educationPatterns = [
+    /(?:Bachelor|Master|PhD|B\.?S\.?|M\.?S\.?|B\.?A\.?|M\.?A\.?)[\s\w]*?(?:in|of|,)\s*([\w\s]+)/gi,
+    /(?:University|College|Institute)[\s\w]*?(?:of|at|,)\s*([\w\s]+)/gi,
+  ];
+
+  for (const pattern of educationPatterns) {
+    const match = resumeText.match(pattern);
+    if (match) {
+      autoFilledData.currentEducation = match[0].trim();
+      break;
+    }
+  }
+
+  // Extract skills
+  const skillsPatterns = [
+    /(?:Skills|Technologies|Programming Languages|Tools):\s*([^.\n]+)/gi,
+    /(?:JavaScript|Python|Java|React|Node\.js|SQL|AWS|Docker|Git|HTML|CSS|TypeScript|Angular|Vue|MongoDB|PostgreSQL|MySQL|Redis|Kubernetes|Docker|Jenkins|Jira|Agile|Scrum)/gi,
+  ];
+
+  const skills = [];
+  for (const pattern of skillsPatterns) {
+    const matches = resumeText.match(pattern);
+    if (matches) {
+      skills.push(...matches.map((skill) => skill.replace(/[:\s]+$/, "")));
+    }
+  }
+
+  if (skills.length > 0) {
+    autoFilledData.currentSkills = [...new Set(skills)].join(", ");
+  }
+
+  // Extract job titles/roles
+  const rolePatterns = [
+    /(?:Software Engineer|Developer|Programmer|Data Scientist|Product Manager|Designer|Analyst|Architect|Lead|Senior|Junior|Full Stack|Frontend|Backend|DevOps|QA|Test)/gi,
+  ];
+
+  const roles = [];
+  for (const pattern of rolePatterns) {
+    const matches = resumeText.match(pattern);
+    if (matches) {
+      roles.push(...matches);
+    }
+  }
+
+  if (roles.length > 0) {
+    autoFilledData.targetRole = roles[0];
+  }
+
+  // Extract experience level based on years of experience
+  const experiencePattern = /(\d+)\s*(?:years?|yrs?)\s*(?:of\s*)?experience/gi;
+  const experienceMatch = resumeText.match(experiencePattern);
+  if (experienceMatch) {
+    const years = parseInt(experienceMatch[0].match(/\d+/)[0]);
+    if (years < 2) autoFilledData.experienceLevel = "entry";
+    else if (years < 5) autoFilledData.experienceLevel = "mid";
+    else if (years < 10) autoFilledData.experienceLevel = "senior";
+    else autoFilledData.experienceLevel = "expert";
+  }
+
+  return autoFilledData;
+}
 
 // Analyze resume and provide suggestions
 export const analyzeResume = async (req, res) => {

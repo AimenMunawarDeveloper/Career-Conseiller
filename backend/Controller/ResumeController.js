@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 export const createResume = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
     const resumeData = req.body;
 
     const resume = new Resume({
@@ -36,7 +36,7 @@ export const createResume = async (req, res) => {
 
 export const getResume = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
     const { resumeId } = req.params;
 
     const resume = await Resume.findOne({
@@ -65,7 +65,7 @@ export const getResume = async (req, res) => {
 
 export const getUserResumes = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
 
     const resumes = await Resume.find({ userId }).select(
       "title template isPublic shareLink lastUpdated"
@@ -86,7 +86,7 @@ export const getUserResumes = async (req, res) => {
 
 export const updateResume = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
     const { resumeId } = req.params;
     const updateData = req.body;
 
@@ -127,7 +127,7 @@ export const updateResume = async (req, res) => {
 
 export const deleteResume = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
     const { resumeId } = req.params;
 
     const resume = await Resume.findOneAndDelete({
@@ -158,7 +158,7 @@ export const analyzeResumeWithAI = async (req, res) => {
   try {
     const { resumeId } = req.params;
     const { jobDescription } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
 
     const resume = await Resume.findOne({
       _id: resumeId,
@@ -209,7 +209,7 @@ export const analyzeResumeWithAI = async (req, res) => {
 export const generatePDF = async (req, res) => {
   try {
     const { resumeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
 
     const resume = await Resume.findOne({
       _id: resumeId,
@@ -262,7 +262,7 @@ export const generatePDF = async (req, res) => {
 
 export const togglePublicAccess = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.payload.id;
     const { resumeId } = req.params;
 
     const resume = await Resume.findOne({

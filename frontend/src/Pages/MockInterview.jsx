@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "../Components/Sidebar";
-import TopBar from "../Components/TopBar";
-import { useApp } from "../Context/AppContext";
+import Layout from "../Components/Layout";
 import {
   BsMic,
   BsMicFill,
@@ -16,7 +14,6 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 
 export default function MockInterview() {
-  const { isOpen } = useApp();
   const [interviewConfig, setInterviewConfig] = useState({
     role: "",
     difficulty: "medium",
@@ -425,24 +422,5 @@ export default function MockInterview() {
     </div>
   );
 
-  return (
-    <div className="w-full h-screen flex flex-row">
-      {isOpen ? (
-        <div className="w-full h-screen flex flex-row">
-          <div className="w-1/5 h-screen">
-            <Sidebar />
-          </div>
-          <div className="w-4/5 h-screen flex flex-col">
-            <TopBar />
-            {mainContent}
-          </div>
-        </div>
-      ) : (
-        <div className="w-full h-screen flex flex-col">
-          <TopBar />
-          {mainContent}
-        </div>
-      )}
-    </div>
-  );
+  return <Layout>{mainContent}</Layout>;
 }
