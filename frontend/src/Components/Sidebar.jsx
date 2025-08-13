@@ -71,11 +71,11 @@ export default function Sidebar() {
 
           <div
             className="w-full flex items-center gap-3 md:gap-4 hover:bg-purple-600 rounded-md p-2 md:p-3 cursor-pointer transition-colors duration-200"
-            onClick={() => navigate("/ResumeBuilder")}
+            onClick={() => navigate("/ResumeAnalyzer")}
           >
             <MdDescription className="text-xl md:text-2xl flex-shrink-0" />
             <div className="text-sm md:text-base lg:text-lg font-medium truncate">
-              Resume Builder
+              Resume Analyzer
             </div>
           </div>
 

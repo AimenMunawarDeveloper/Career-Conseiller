@@ -15,21 +15,22 @@ export default function TopBar() {
           className="cursor-pointer text-xl md:text-2xl hover:text-purple-200 transition-colors duration-200"
           onClick={() => toggleSidebar()}
         />
-        <div className="flex items-center gap-2 border-2 border-black rounded-md p-2 flex-1">
+        {/* <div className="flex items-center gap-2 border-2 border-black rounded-md p-2 flex-1">
           <IoSearchOutline className="text-lg md:text-xl" />
           <input
             type="text"
             placeholder="Search..."
             className="bg-transparent outline-none text-white placeholder-white/70 text-sm md:text-base flex-1"
           />
-        </div>
+        </div> */}
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
-        <FaUserCircle className="text-2xl md:text-3xl" />
         <div className="hidden sm:block">
-          <h2 className="text-sm md:text-base font-medium">{user?.username}</h2>
-          <h4 className="text-xs md:text-sm text-white/80">{user?.email}</h4>
+          <h2 className="text-md md:text-lg font-medium text-center">
+            {user?.username}
+          </h2>
+          <h4 className="text-sm md:text-base text-white/80">{user?.email}</h4>
         </div>
       </div>
     </div>

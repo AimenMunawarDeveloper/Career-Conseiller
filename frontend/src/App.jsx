@@ -8,7 +8,7 @@ import AlChat from "./Pages/AlChat.jsx";
 import LatestJobs from "./Pages/LatestJobs.jsx";
 import SkillsInformation from "./Pages/SkillsInformation.jsx";
 import CareerRoadmap from "./Pages/CareerRoadmap.jsx";
-import ResumeBuilder from "./Pages/ResumeBuilder.jsx";
+import ResumeAnalyzer from "./Pages/ResumeAnalyzer.jsx";
 import SkillGapAnalyzer from "./Pages/SkillGapAnalyzer.jsx";
 import MockInterview from "./Pages/MockInterview.jsx";
 import { Toaster } from "react-hot-toast";
@@ -24,7 +24,7 @@ export default function App() {
           <Route path="/LatestJobs" element={<LatestJobs />} />
           <Route path="/SkillsInformation" element={<SkillsInformation />} />
           <Route path="/CareerRoadmap" element={<CareerRoadmap />} />
-          <Route path="/ResumeBuilder" element={<ResumeBuilder />} />
+          <Route path="/ResumeAnalyzer" element={<ResumeAnalyzer />} />
           <Route path="/SkillGapAnalyzer" element={<SkillGapAnalyzer />} />
           <Route path="/MockInterview" element={<MockInterview />} />
         </Routes>

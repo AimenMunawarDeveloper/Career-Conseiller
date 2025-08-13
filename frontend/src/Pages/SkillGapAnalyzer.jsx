@@ -97,6 +97,11 @@ export default function SkillGapAnalyzer() {
                 <p className="text-sm text-gray-600">
                   Duration: {course.estimatedDuration}
                 </p>
+                {course.cost && (
+                  <p className="text-sm text-gray-600">
+                    Cost: {course.cost}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -119,6 +124,11 @@ export default function SkillGapAnalyzer() {
                 <p className="text-sm text-gray-600 mt-1">
                   {project.description}
                 </p>
+                {project.difficulty && (
+                  <p className="text-sm text-gray-600">
+                    Difficulty: {project.difficulty}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -126,7 +136,7 @@ export default function SkillGapAnalyzer() {
       )}
 
       {analysis.recommendations.certifications.length > 0 && (
-        <div>
+        <div className="mb-6">
           <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
             <MdTrendingUp className="text-purple-500" />
             Certifications
@@ -143,7 +153,66 @@ export default function SkillGapAnalyzer() {
                 <p className="text-sm text-gray-600 mt-1">
                   Provider: {cert.provider}
                 </p>
+                {cert.validity && (
+                  <p className="text-sm text-gray-600">
+                    Validity: {cert.validity}
+                  </p>
+                )}
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderAnalysisInsights = () => (
+    <div className="bg-white rounded-lg shadow-sm border p-6">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        Analysis Insights
+      </h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="text-center p-4 bg-blue-50 rounded-lg">
+          <div className="text-lg font-semibold text-blue-600 capitalize">
+            {analysis.analysis?.overallGap || "Medium"}
+          </div>
+          <div className="text-sm text-blue-700">Overall Gap Level</div>
+        </div>
+        
+        <div className="text-center p-4 bg-green-50 rounded-lg">
+          <div className="text-lg font-semibold text-green-600 capitalize">
+            {analysis.analysis?.marketDemand || "High"}
+          </div>
+          <div className="text-sm text-green-700">Market Demand</div>
+        </div>
+        
+        <div className="text-center p-4 bg-purple-50 rounded-lg">
+          <div className="text-lg font-semibold text-purple-600">
+            {analysis.analysis?.timeline || "6-12 months"}
+          </div>
+          <div className="text-sm text-purple-700">Timeline to Acquire</div>
+        </div>
+        
+        <div className="text-center p-4 bg-orange-50 rounded-lg">
+          <div className="text-lg font-semibold text-orange-600">
+            {analysis.analysis?.prioritySkills?.length || 0}
+          </div>
+          <div className="text-sm text-orange-700">Priority Skills</div>
+        </div>
+      </div>
+
+      {analysis.analysis?.prioritySkills && analysis.analysis.prioritySkills.length > 0 && (
+        <div className="mt-6">
+          <h4 className="font-medium text-gray-700 mb-3">Priority Skills to Focus On:</h4>
+          <div className="flex flex-wrap gap-2">
+            {analysis.analysis.prioritySkills.map((skill, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium"
+              >
+                {skill}
+              </span>
             ))}
           </div>
         </div>
@@ -245,12 +314,24 @@ export default function SkillGapAnalyzer() {
                   required
                 >
                   <option value="">Select a role</option>
-                  <option value="software_engineer">Software Engineer</option>
-                  <option value="data_scientist">Data Scientist</option>
-                  <option value="product_manager">Product Manager</option>
-                  <option value="marketing_specialist">
-                    Marketing Specialist
-                  </option>
+                  <option value="software engineer">Software Engineer</option>
+                  <option value="data scientist">Data Scientist</option>
+                  <option value="product manager">Product Manager</option>
+                  <option value="ui/ux designer">UI/UX Designer</option>
+                  <option value="devops engineer">DevOps Engineer</option>
+                  <option value="frontend developer">Frontend Developer</option>
+                  <option value="backend developer">Backend Developer</option>
+                  <option value="full stack developer">Full Stack Developer</option>
+                  <option value="machine learning engineer">Machine Learning Engineer</option>
+                  <option value="business analyst">Business Analyst</option>
+                  <option value="project manager">Project Manager</option>
+                  <option value="sales representative">Sales Representative</option>
+                  <option value="customer success manager">Customer Success Manager</option>
+                  <option value="human resources specialist">Human Resources Specialist</option>
+                  <option value="financial analyst">Financial Analyst</option>
+                  <option value="content writer">Content Writer</option>
+                  <option value="digital marketing specialist">Digital Marketing Specialist</option>
+                  <option value="marketing specialist">Marketing Specialist</option>
                 </select>
               </div>
 
@@ -286,6 +367,9 @@ export default function SkillGapAnalyzer() {
           <div className="space-y-6">
             {/* Progress Chart */}
             {renderProgressChart()}
+
+            {/* Analysis Insights */}
+            {renderAnalysisInsights()}
 
             {/* Skill Gaps */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

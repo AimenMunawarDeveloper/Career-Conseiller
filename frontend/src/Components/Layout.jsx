@@ -23,7 +23,7 @@ export default function Layout({ children }) {
       <div
         className={`h-screen flex flex-col transition-all duration-300 ease-in-out ${
           isOpen
-            ? "w-[calc(100%-16rem)] md:w-[calc(100%-18rem)] lg:w-[calc(100%-20rem)]" // Responsive to sidebar width
+            ? "flex-1" // Use flex-1 to take remaining space
             : "w-full" // Full width when sidebar closed
         }`}
       >

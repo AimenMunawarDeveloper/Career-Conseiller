@@ -27,14 +27,33 @@ export default function SkillsInformation() {
     fetchSkills();
   }, []);
 
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading skills information...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="w-full h-full">
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">
-          Skills Information
-        </h2>
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Skills Information
+          </h1>
+          <p className="text-gray-600">
+            Explore various skills and their requirements in the job market
+          </p>
+        </div>
 
-        {loading && <div>Loading skills...</div>}
+        {/* Content */}
         {error && <div className="text-red-500">{error}</div>}
         {!loading && !error && skillsData.length === 0 && (
           <div>No skills found.</div>

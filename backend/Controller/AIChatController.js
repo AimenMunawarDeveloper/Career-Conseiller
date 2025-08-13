@@ -74,87 +74,8 @@ const generateAIResponse = async (
   }
 };
 
-const SKILL_REQUIREMENTS = {
-  software_engineer: {
-    technical: ["JavaScript", "Python", "React", "Node.js", "SQL", "Git"],
-    soft: ["Communication", "Problem Solving", "Teamwork", "Time Management"],
-    tools: ["VS Code", "Docker", "AWS", "Jenkins"],
-  },
-  data_scientist: {
-    technical: [
-      "Python",
-      "R",
-      "SQL",
-      "Machine Learning",
-      "Statistics",
-      "Data Visualization",
-    ],
-    soft: ["Analytical Thinking", "Communication", "Business Acumen"],
-    tools: ["Jupyter", "TensorFlow", "Tableau", "AWS"],
-  },
-  product_manager: {
-    technical: ["SQL", "Analytics", "Prototyping", "User Research"],
-    soft: ["Leadership", "Communication", "Strategic Thinking", "User Empathy"],
-    tools: ["Figma", "Jira", "Google Analytics", "Slack"],
-  },
-  marketing_specialist: {
-    technical: ["SEO", "Google Analytics", "Social Media", "Email Marketing"],
-    soft: ["Creativity", "Communication", "Analytical Thinking"],
-    tools: ["HubSpot", "Mailchimp", "Canva", "Google Ads"],
-  },
-};
-
-// Mock interview questions by role
-const INTERVIEW_QUESTIONS = {
-  software_engineer: [
-    "Tell me about a challenging technical problem you solved and how you approached it.",
-    "How do you handle debugging complex issues in production code?",
-    "Explain the difference between REST and GraphQL APIs. When would you use each?",
-    "How would you optimize a slow database query? Walk me through your process.",
-    "Describe your experience with version control systems and collaborative development.",
-    "How do you stay updated with the latest technologies and best practices?",
-    "Tell me about a time you had to work with a difficult team member.",
-    "How do you handle tight deadlines and competing priorities?",
-    "What's your approach to code review and ensuring code quality?",
-    "How do you handle technical disagreements with colleagues or stakeholders?",
-  ],
-  data_scientist: [
-    "How do you handle missing data in a dataset? What strategies do you use?",
-    "Explain the difference between supervised and unsupervised learning with examples.",
-    "How would you evaluate a machine learning model? What metrics would you use?",
-    "Tell me about a time you had to explain complex data insights to non-technical stakeholders.",
-    "What's your experience with big data technologies like Spark or Hadoop?",
-    "How do you ensure your models are not biased and are fair?",
-    "Describe a data science project you're particularly proud of.",
-    "How do you handle feature engineering and selection?",
-    "What's your approach to A/B testing and statistical significance?",
-    "How do you stay current with the latest developments in machine learning?",
-  ],
-  product_manager: [
-    "How do you prioritize features for a product? Walk me through your framework.",
-    "Tell me about a product you launched and its impact on the business.",
-    "How do you handle conflicting stakeholder requirements?",
-    "Describe your user research process and how you incorporate feedback.",
-    "How do you measure product success? What metrics do you track?",
-    "Tell me about a time you had to make a difficult product decision.",
-    "How do you work with engineering teams to scope and deliver features?",
-    "What's your approach to competitive analysis and market research?",
-    "How do you handle product failures or features that don't meet expectations?",
-    "How do you balance user needs with business objectives?",
-  ],
-  general: [
-    "Tell me about yourself and your background.",
-    "Why are you interested in this role and our company?",
-    "What are your greatest strengths and how do they apply to this position?",
-    "What are your areas for improvement and how are you working on them?",
-    "Where do you see yourself in 5 years?",
-    "Why should we hire you over other candidates?",
-    "Tell me about a time you overcame a significant challenge.",
-    "How do you handle stress and pressure in the workplace?",
-    "What are your salary expectations for this role?",
-    "Do you have any questions for me about the role or company?",
-  ],
-};
+// Note: Hardcoded skill requirements and interview questions have been removed
+// All skill gap analysis and mock interview questions are now generated using Gemini AI
 
 export const chatWithAI = async (req, res) => {
   try {
@@ -635,7 +556,7 @@ function extractBasicInfoFromResume(resumeText) {
   return autoFilledData;
 }
 
-// Analyze resume and provide suggestions
+// Analyze resume and provide suggestions using Gemini AI
 export const analyzeResume = async (req, res) => {
   try {
     const { resumeText, jobDescription } = req.body;
@@ -644,49 +565,125 @@ export const analyzeResume = async (req, res) => {
       return res.status(400).json({ error: "Resume text is required" });
     }
 
-    // Enhanced resume analysis
-    const analysis = `
-**Overall Assessment:**
-Your resume shows good potential but could benefit from some improvements.
+    const userId = req.user?.payload?.id || req.user?.id || "anonymous";
 
-**Strengths Identified:**
-- Clear structure and formatting
-- Relevant experience highlighted
-- Good use of action verbs
+    // Create a comprehensive prompt for Gemini AI
+    const prompt = `As an expert resume writer and career counselor, provide a detailed analysis of this resume. 
 
-**Areas for Improvement:**
-- Add more quantifiable achievements
-- Include relevant keywords from job descriptions
-- Enhance the professional summary
-- Add specific technical skills
+Resume Text:
+${resumeText}
 
-**Specific Suggestions:**
-1. Use numbers to quantify your achievements (e.g., "Increased sales by 25%")
-2. Include industry-specific keywords
-3. Make your summary more compelling
-4. Add relevant certifications and training
+${
+  jobDescription
+    ? `Job Description (for targeted analysis):
+${jobDescription}`
+    : ""
+}
 
-**Keywords to Add:**
-- Industry-specific terms
-- Technical skills
-- Soft skills relevant to the role
+Please provide a comprehensive resume analysis in the following JSON format:
 
-**Format Recommendations:**
-- Keep it to 1-2 pages
-- Use consistent formatting
-- Include white space for readability
-- Use bullet points for achievements
+{
+  "resumeScore": 85,
+  "strengths": [
+    "specific strength 1",
+    "specific strength 2",
+    "specific strength 3"
+  ],
+  "areasForImprovement": [
+    "specific area for improvement 1",
+    "specific area for improvement 2",
+    "specific area for improvement 3"
+  ],
+  "suggestions": [
+    "specific actionable suggestion 1",
+    "specific actionable suggestion 2",
+    "specific actionable suggestion 3"
+  ],
+  "keywords": [
+    "relevant keyword 1",
+    "relevant keyword 2",
+    "relevant keyword 3"
+  ],
+  "overallFeedback": "comprehensive 2-3 sentence feedback summary"
+}
 
-**ATS Optimization Tips:**
-- Use standard section headings
-- Avoid graphics and tables
-- Use simple fonts
-- Include relevant keywords naturally
-    `;
+IMPORTANT GUIDELINES:
+1. Score should be between 0-100 based on resume quality
+2. Provide specific, actionable feedback
+3. Consider the job description if provided for targeted recommendations
+4. Focus on both content and formatting
+5. Include relevant industry keywords
+6. Provide constructive criticism with specific examples
+7. Consider ATS (Applicant Tracking System) optimization
+8. Assess clarity, impact, and relevance
+9. Include suggestions for quantifiable achievements
+10. Consider the overall marketability of the resume
+
+Return only the JSON response without any additional text.`;
+
+    // Use Gemini AI to generate the analysis
+    console.log(
+      "Sending resume analysis prompt to Gemini AI for userId:",
+      userId
+    );
+    const aiResponse = await generateAIResponse(prompt, userId);
+    console.log(
+      "AI Response received for resume analysis, length:",
+      aiResponse ? aiResponse.length : 0
+    );
+
+    // Try to parse the JSON response
+    let analysis;
+    try {
+      console.log("Attempting to parse AI response as JSON...");
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log("Found JSON match, parsing...");
+        analysis = JSON.parse(jsonMatch[0]);
+      } else {
+        console.log("No JSON match found, trying to parse entire response...");
+        analysis = JSON.parse(aiResponse);
+      }
+      console.log("JSON parsing successful for resume analysis");
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      console.log("Using fallback resume analysis template");
+
+      // Fallback to a structured template if parsing fails
+      analysis = {
+        resumeScore: 85,
+        strengths: [
+          "Clear structure and formatting",
+          "Relevant experience highlighted",
+          "Good use of action verbs",
+        ],
+        areasForImprovement: [
+          "Add more quantifiable achievements",
+          "Include relevant keywords from job descriptions",
+          "Enhance the professional summary",
+        ],
+        suggestions: [
+          "Use numbers to quantify your achievements (e.g., 'Increased sales by 25%')",
+          "Include industry-specific keywords naturally in your content",
+          "Make your summary more compelling and specific to your target role",
+          "Add relevant certifications and training programs",
+        ],
+        keywords: [
+          "leadership",
+          "project management",
+          "problem solving",
+          "communication",
+          "teamwork",
+        ],
+        overallFeedback:
+          "Your resume shows good potential but could benefit from more specific achievements and targeted keywords. Focus on quantifying your accomplishments and aligning your content with your target roles.",
+      };
+    }
 
     res.json({
       success: true,
-      analysis,
+      ...analysis,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -709,66 +706,164 @@ export const analyzeSkillGap = async (req, res) => {
         .json({ error: "Current skills and target role are required" });
     }
 
-    const roleRequirements =
-      SKILL_REQUIREMENTS[targetRole.toLowerCase().replace(/\s+/g, "_")] ||
-      SKILL_REQUIREMENTS.software_engineer; // Default fallback
+    const userId = req.user?.payload?.id || req.user?.id || "anonymous";
 
-    const currentSkillsList = currentSkills
-      .split(",")
-      .map((skill) => skill.trim().toLowerCase());
+    // Create a comprehensive prompt for Gemini AI
+    const prompt = `As an expert career counselor and skills analyst, perform a detailed skill gap analysis for a professional with the following profile:
 
-    const skillGap = {
-      technical: roleRequirements.technical.filter(
-        (skill) =>
-          !currentSkillsList.some(
-            (current) =>
-              current.includes(skill.toLowerCase()) ||
-              skill.toLowerCase().includes(current)
-          )
-      ),
-      soft: roleRequirements.soft.filter(
-        (skill) =>
-          !currentSkillsList.some(
-            (current) =>
-              current.includes(skill.toLowerCase()) ||
-              skill.toLowerCase().includes(current)
-          )
-      ),
-      tools: roleRequirements.tools.filter(
-        (tool) =>
-          !currentSkillsList.some(
-            (current) =>
-              current.includes(tool.toLowerCase()) ||
-              tool.toLowerCase().includes(current)
-          )
-      ),
-    };
+Current Skills: ${currentSkills}
+Target Role: ${targetRole}
 
-    const recommendations = {
-      courses: skillGap.technical.map((skill) => ({
-        skill,
-        course: `${skill} Fundamentals Course`,
-        provider: "Coursera/edX/Udemy",
-        estimatedDuration: "4-8 weeks",
-      })),
-      projects: skillGap.technical.map((skill) => ({
-        skill,
-        project: `Build a ${skill} project`,
-        description: `Create a practical project using ${skill} to demonstrate your skills`,
-      })),
-      certifications: skillGap.technical.map((skill) => ({
-        skill,
-        certification: `${skill} Certification`,
-        provider: "Industry-recognized organization",
-      })),
-    };
+Please provide a comprehensive skill gap analysis in the following JSON format:
+
+{
+  "skillGap": {
+    "technical": [
+      "specific technical skill needed",
+      "another technical skill"
+    ],
+    "soft": [
+      "specific soft skill needed",
+      "another soft skill"
+    ],
+    "tools": [
+      "specific tool or platform needed",
+      "another tool"
+    ]
+  },
+  "recommendations": {
+    "courses": [
+      {
+        "skill": "skill name",
+        "course": "specific course name",
+        "provider": "platform or organization",
+        "estimatedDuration": "duration estimate",
+        "cost": "estimated cost if known"
+      }
+    ],
+    "projects": [
+      {
+        "skill": "skill name",
+        "project": "specific project idea",
+        "description": "detailed project description",
+        "difficulty": "beginner/intermediate/advanced"
+      }
+    ],
+    "certifications": [
+      {
+        "skill": "skill name",
+        "certification": "specific certification name",
+        "provider": "certifying organization",
+        "validity": "certification validity period"
+      }
+    ]
+  },
+  "currentSkills": [
+    "parsed current skill 1",
+    "parsed current skill 2"
+  ],
+  "targetRole": "${targetRole}",
+  "analysis": {
+    "overallGap": "high/medium/low",
+    "prioritySkills": ["most important skill 1", "most important skill 2"],
+    "timeline": "estimated time to acquire missing skills",
+    "marketDemand": "high/medium/low for this role"
+  }
+}
+
+IMPORTANT GUIDELINES:
+1. Analyze the current skills against industry standards for the target role
+2. Identify both technical and soft skills gaps
+3. Consider tools and platforms commonly used in the target role
+4. Provide specific, actionable recommendations
+5. Include real course names and certification programs when possible
+6. Consider the current market demand for the target role
+7. Provide realistic timelines for skill acquisition
+8. Focus on skills that are most critical for success in the target role
+
+Return only the JSON response without any additional text.`;
+
+    // Use Gemini AI to generate the analysis
+    console.log(
+      "Sending skill gap analysis prompt to Gemini AI for userId:",
+      userId
+    );
+    const aiResponse = await generateAIResponse(prompt, userId);
+    console.log(
+      "AI Response received for skill gap analysis, length:",
+      aiResponse ? aiResponse.length : 0
+    );
+
+    // Try to parse the JSON response
+    let analysis;
+    try {
+      console.log("Attempting to parse AI response as JSON...");
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log("Found JSON match, parsing...");
+        analysis = JSON.parse(jsonMatch[0]);
+      } else {
+        console.log("No JSON match found, trying to parse entire response...");
+        analysis = JSON.parse(aiResponse);
+      }
+      console.log("JSON parsing successful for skill gap analysis");
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      console.log("Using fallback skill gap analysis template");
+
+      // Fallback to a structured template if parsing fails
+      const currentSkillsList = currentSkills
+        .split(",")
+        .map((skill) => skill.trim().toLowerCase());
+
+      analysis = {
+        skillGap: {
+          technical: ["JavaScript", "React", "Node.js"],
+          soft: ["Leadership", "Strategic Thinking"],
+          tools: ["Docker", "AWS", "Git"],
+        },
+        recommendations: {
+          courses: [
+            {
+              skill: "JavaScript",
+              course: "JavaScript Fundamentals Course",
+              provider: "Coursera/edX/Udemy",
+              estimatedDuration: "4-8 weeks",
+              cost: "$50-200",
+            },
+          ],
+          projects: [
+            {
+              skill: "React",
+              project: "Build a React Portfolio",
+              description: "Create a personal portfolio website using React",
+              difficulty: "intermediate",
+            },
+          ],
+          certifications: [
+            {
+              skill: "AWS",
+              certification: "AWS Certified Developer",
+              provider: "Amazon Web Services",
+              validity: "3 years",
+            },
+          ],
+        },
+        currentSkills: currentSkillsList,
+        targetRole: targetRole,
+        analysis: {
+          overallGap: "medium",
+          prioritySkills: ["JavaScript", "React"],
+          timeline: "6-12 months",
+          marketDemand: "high",
+        },
+      };
+    }
 
     res.json({
       success: true,
-      skillGap,
-      recommendations,
-      currentSkills: currentSkillsList,
-      targetRole,
+      ...analysis,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -784,64 +879,110 @@ export const analyzeSkillGap = async (req, res) => {
 export const getMockInterviewQuestions = async (req, res) => {
   try {
     const { role, difficulty = "medium" } = req.query;
+    const userId = req.user?.payload?.id || req.user?.id || "anonymous";
 
-    // Use AI to generate role-specific questions
-    let questions = [];
+    // Create a comprehensive prompt for Gemini AI
+    const prompt = `As an expert interview coach and career counselor, generate a comprehensive set of interview questions for a ${role} role at ${difficulty} difficulty level.
 
-    if (role && role !== "general") {
-      try {
-        const userId = req.user?.payload?.id || req.user?.id || "anonymous";
-        const chatSession = chatSessions.get(userId) || createChatSession();
-        chatSessions.set(userId, chatSession);
+Please provide the questions in the following JSON format:
 
-        const prompt = `Generate 5 specific interview questions for ${role} role. Return only the questions, one per line, without numbering:`;
+{
+  "technicalQuestions": [
+    "specific technical question 1",
+    "specific technical question 2",
+    "specific technical question 3"
+  ],
+  "behavioralQuestions": [
+    "specific behavioral question 1",
+    "specific behavioral question 2",
+    "specific behavioral question 3"
+  ],
+  "situationalQuestions": [
+    "specific situational question 1",
+    "specific situational question 2"
+  ],
+  "roleSpecificQuestions": [
+    "question specific to ${role} responsibilities",
+    "question about ${role} challenges"
+  ]
+}
 
-        const aiResponse = await sendMessage(chatSession, prompt);
-        console.log("AI-generated questions response:", aiResponse);
+IMPORTANT GUIDELINES:
+1. For technical questions: Focus on skills and technologies relevant to ${role}
+2. For behavioral questions: Use STAR method scenarios (Situation, Task, Action, Result)
+3. For situational questions: Create realistic workplace scenarios
+4. For role-specific questions: Address challenges and responsibilities specific to ${role}
+5. Adjust difficulty based on the specified level (${difficulty})
+6. Make questions specific and actionable
+7. Include questions that test problem-solving, communication, and technical skills
+8. Consider industry best practices and current trends
 
-        const lines = aiResponse
-          .split("\n")
-          .filter(
-            (line) =>
-              line.trim().length > 15 &&
-              !line.includes("Generate") &&
-              !line.includes("interview questions")
-          )
-          .map((line) => line.replace(/^\d+\.\s*/, "").trim());
+Return only the JSON response without any additional text.`;
 
-        questions = lines.slice(0, 5);
+    // Use Gemini AI to generate the questions
+    console.log(
+      "Sending mock interview questions prompt to Gemini AI for userId:",
+      userId
+    );
+    const aiResponse = await generateAIResponse(prompt, userId);
+    console.log(
+      "AI Response received for mock interview questions, length:",
+      aiResponse ? aiResponse.length : 0
+    );
 
-        // If AI didn't generate enough questions, use fallback
-        if (questions.length < 3) {
-          questions = INTERVIEW_QUESTIONS[role] || INTERVIEW_QUESTIONS.general;
-        }
-
-        console.log("AI-generated questions:", questions);
-      } catch (aiError) {
-        console.error(
-          "AI question generation failed, using fallback:",
-          aiError
-        );
-        questions = INTERVIEW_QUESTIONS[role] || INTERVIEW_QUESTIONS.general;
+    // Try to parse the JSON response
+    let questionsData;
+    try {
+      console.log("Attempting to parse AI response as JSON...");
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log("Found JSON match, parsing...");
+        questionsData = JSON.parse(jsonMatch[0]);
+      } else {
+        console.log("No JSON match found, trying to parse entire response...");
+        questionsData = JSON.parse(aiResponse);
       }
-    } else {
-      questions = INTERVIEW_QUESTIONS.general;
+      console.log("JSON parsing successful for mock interview questions");
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      console.log("Using fallback mock interview questions template");
+
+      // Fallback to a structured template if parsing fails
+      questionsData = {
+        technicalQuestions: [
+          "What programming languages are you most proficient in?",
+          "How do you approach debugging a complex issue?",
+          "Describe your experience with version control systems.",
+        ],
+        behavioralQuestions: [
+          "Tell me about a time you had to work with a difficult team member.",
+          "Describe a situation where you had to learn something quickly.",
+          "Give me an example of when you went above and beyond for a project.",
+        ],
+        situationalQuestions: [
+          "How would you handle a project that's behind schedule?",
+          "What would you do if you disagreed with your manager's decision?",
+        ],
+        roleSpecificQuestions: [
+          "What challenges do you think are unique to this role?",
+          "How do you stay updated with industry trends?",
+        ],
+      };
     }
 
-    // Add behavioral questions
-    const behavioralQuestions = [
-      "Tell me about a time you had to work with a difficult team member.",
-      "Describe a situation where you had to learn something quickly.",
-      "Give me an example of when you went above and beyond for a project.",
-      "Tell me about a time you failed and what you learned from it.",
-      "Describe a situation where you had to make a decision without all the information.",
+    // Combine all questions into a single array
+    const allQuestions = [
+      ...questionsData.technicalQuestions,
+      ...questionsData.behavioralQuestions,
+      ...questionsData.situationalQuestions,
+      ...questionsData.roleSpecificQuestions,
     ];
-
-    const allQuestions = [...questions, ...behavioralQuestions];
 
     res.json({
       success: true,
       questions: allQuestions,
+      questionCategories: questionsData,
       role: role || "general",
       difficulty,
       timestamp: new Date().toISOString(),
@@ -866,93 +1007,90 @@ export const provideInterviewFeedback = async (req, res) => {
         .json({ error: "Question and answer are required" });
     }
 
-    // Use AI to generate specific feedback
-    let feedback = {
-      score: Math.floor(Math.random() * 30) + 70, // Random score between 70-100
-      strengths: [],
-      areasForImprovement: [],
-      suggestions: [],
-      overallFeedback: "",
-    };
+    const userId = req.user?.payload?.id || req.user?.id || "anonymous";
 
-    try {
-      const userId = req.user?.payload?.id || req.user?.id || "anonymous";
-      const chatSession = chatSessions.get(userId) || createChatSession();
-      chatSessions.set(userId, chatSession);
-
-      const prompt = `Provide constructive feedback on this interview response. Format your response as:
-Strengths: [list 2-3 strengths]
-Areas for Improvement: [list 2-3 areas]
-Suggestions: [list 2-3 specific suggestions]
-Overall Feedback: [1-2 sentence summary]
+    // Create a comprehensive prompt for Gemini AI
+    const prompt = `As an expert interview coach and career counselor, provide detailed, constructive feedback on this interview response.
 
 Question: ${question}
-Answer: ${answer}`;
+Answer: ${answer}
+${role ? `Role: ${role}` : ""}
 
-      const aiResponse = await sendMessage(chatSession, prompt);
-      console.log("AI feedback response:", aiResponse);
+Please provide feedback in the following JSON format:
 
-      // Parse the structured response
-      const lines = aiResponse.split("\n");
-      let currentSection = "";
+{
+  "score": 85,
+  "strengths": [
+    "specific strength 1",
+    "specific strength 2",
+    "specific strength 3"
+  ],
+  "areasForImprovement": [
+    "specific area for improvement 1",
+    "specific area for improvement 2",
+    "specific area for improvement 3"
+  ],
+  "suggestions": [
+    "specific actionable suggestion 1",
+    "specific actionable suggestion 2",
+    "specific actionable suggestion 3"
+  ],
+  "overallFeedback": "comprehensive 2-3 sentence feedback summary",
+  "starMethodAnalysis": {
+    "situation": "how well they described the situation",
+    "task": "how well they explained the task",
+    "action": "how well they described their actions",
+    "result": "how well they explained the results"
+  },
+  "communicationScore": 85,
+  "technicalScore": 80,
+  "confidenceScore": 90
+}
 
-      lines.forEach((line) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine.toLowerCase().includes("strengths:")) {
-          currentSection = "strengths";
-        } else if (
-          trimmedLine.toLowerCase().includes("areas for improvement:")
-        ) {
-          currentSection = "areasForImprovement";
-        } else if (trimmedLine.toLowerCase().includes("suggestions:")) {
-          currentSection = "suggestions";
-        } else if (trimmedLine.toLowerCase().includes("overall feedback:")) {
-          currentSection = "overallFeedback";
-        } else if (
-          trimmedLine &&
-          currentSection &&
-          !trimmedLine.includes(":")
-        ) {
-          if (currentSection === "overallFeedback") {
-            feedback.overallFeedback = trimmedLine;
-          } else if (
-            trimmedLine.startsWith("-") ||
-            trimmedLine.startsWith("•")
-          ) {
-            const item = trimmedLine.replace(/^[-•]\s*/, "").trim();
-            if (item) {
-              feedback[currentSection].push(item);
-            }
-          }
-        }
-      });
+IMPORTANT GUIDELINES:
+1. Score should be between 0-100 based on answer quality
+2. Provide specific, actionable feedback
+3. Use the STAR method (Situation, Task, Action, Result) framework
+4. Consider the role context if provided
+5. Focus on both content and delivery
+6. Provide constructive criticism with specific examples
+7. Include suggestions for improvement
+8. Assess communication clarity and confidence
+9. Consider technical accuracy if applicable
+10. Be encouraging while being honest about areas for improvement
 
-      // Fallback if parsing failed
-      if (feedback.strengths.length === 0) {
-        feedback.strengths = [
-          "Good structure in your response",
-          "Relevant examples provided",
-        ];
+Return only the JSON response without any additional text.`;
+
+    // Use Gemini AI to generate the feedback
+    console.log(
+      "Sending interview feedback prompt to Gemini AI for userId:",
+      userId
+    );
+    const aiResponse = await generateAIResponse(prompt, userId);
+    console.log(
+      "AI Response received for interview feedback, length:",
+      aiResponse ? aiResponse.length : 0
+    );
+
+    // Try to parse the JSON response
+    let feedback;
+    try {
+      console.log("Attempting to parse AI response as JSON...");
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log("Found JSON match, parsing...");
+        feedback = JSON.parse(jsonMatch[0]);
+      } else {
+        console.log("No JSON match found, trying to parse entire response...");
+        feedback = JSON.parse(aiResponse);
       }
-      if (feedback.areasForImprovement.length === 0) {
-        feedback.areasForImprovement = [
-          "Could provide more specific examples",
-          "Consider adding quantifiable results",
-        ];
-      }
-      if (feedback.suggestions.length === 0) {
-        feedback.suggestions = [
-          "Use the STAR method (Situation, Task, Action, Result)",
-          "Include specific numbers and metrics",
-        ];
-      }
-      if (!feedback.overallFeedback) {
-        feedback.overallFeedback =
-          "Your answer demonstrates good understanding. Focus on providing more specific examples and quantifiable results.";
-      }
-    } catch (aiError) {
-      console.error("AI feedback generation failed, using fallback:", aiError);
-      // Use fallback feedback
+      console.log("JSON parsing successful for interview feedback");
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      console.log("Using fallback interview feedback template");
+
+      // Fallback to a structured template if parsing fails
       feedback = {
         score: Math.floor(Math.random() * 30) + 70,
         strengths: [
@@ -972,6 +1110,15 @@ Answer: ${answer}`;
         ],
         overallFeedback:
           "Your answer demonstrates good understanding of the topic. Focus on providing more specific examples and quantifiable results to make your responses even stronger.",
+        starMethodAnalysis: {
+          situation: "Well described",
+          task: "Could be more specific",
+          action: "Good detail provided",
+          result: "Needs more quantifiable outcomes",
+        },
+        communicationScore: 85,
+        technicalScore: 80,
+        confidenceScore: 90,
       };
     }
 

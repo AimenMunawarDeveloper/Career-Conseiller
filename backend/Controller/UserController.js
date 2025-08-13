@@ -7,16 +7,35 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const loginUser = async (req, res) => {
   try {
+    console.log("Login request received:", { email: req.body.email });
     const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      console.log("Missing login fields:", {
+        email: !!email,
+        password: !!password,
+      });
+      return res.status(400).json({
+        message: "Email and password are required",
+        missing: {
+          email: !email,
+          password: !password,
+        },
+      });
+    }
+
     const user = await userModel.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ message: "user not found" });
+      console.log("User not found:", email);
+      return res.status(404).json({ message: "User not found" });
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      return res.status(401).json({ message: "password is incorrect" });
+      console.log("Password incorrect for:", email);
+      return res.status(401).json({ message: "Password is incorrect" });
     }
 
     // Generate JWT token
@@ -26,8 +45,9 @@ const loginUser = async (req, res) => {
       username: user.username,
     });
 
+    console.log("Login successful for:", email);
     return res.status(200).json({
-      message: "login successfully",
+      message: "Login successful",
       user: {
         id: user._id,
         email: user.email,
@@ -36,18 +56,40 @@ const loginUser = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "login failed" });
+    console.error("Login error:", error);
+    res.status(500).json({
+      message: "Login failed",
+      error: error.message,
+    });
   }
 };
 
 const registerUser = async (req, res) => {
   try {
+    console.log("Registration request received:", req.body);
     const { username, email, password } = req.body;
+
+    // Validate input
+    if (!username || !email || !password) {
+      console.log("Missing required fields:", {
+        username: !!username,
+        email: !!email,
+        password: !!password,
+      });
+      return res.status(400).json({
+        message: "All fields are required",
+        missing: {
+          username: !username,
+          email: !email,
+          password: !password,
+        },
+      });
+    }
 
     // Check if user already exists
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
+      console.log("User already exists:", email);
       return res
         .status(400)
         .json({ message: "An account with this email already exists" });
@@ -61,7 +103,10 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
     });
+
+    console.log("Saving new user:", { username, email });
     await newUser.save();
+    console.log("User saved successfully");
 
     // Generate JWT token
     const token = generateJWTToken({
@@ -70,6 +115,7 @@ const registerUser = async (req, res) => {
       username: newUser.username,
     });
 
+    console.log("Registration successful for:", email);
     res.status(201).json({
       message: "User registered successfully",
       user: {
@@ -80,7 +126,11 @@ const registerUser = async (req, res) => {
       token,
     });
   } catch (error) {
-    res.status(500).json({ message: "User registration failed" });
+    console.error("Registration error:", error);
+    res.status(500).json({
+      message: "User registration failed",
+      error: error.message,
+    });
   }
 };
 

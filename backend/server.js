@@ -1,5 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
+
+// Debug environment variables
+console.log("Environment variables check:");
+console.log("RETELL_API_KEY:", process.env.RETELL_API_KEY ? "SET" : "NOT SET");
+console.log("PORT:", process.env.PORT);
+console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
 import connectDB from "./Config/db.js";
 import express from "express";
 import userRoute from "./Route/UserRoute.js";
@@ -7,9 +13,10 @@ import cors from "cors";
 import careerInformationRoute from "./Route/CareerRoute.js";
 import aiRoute from "./Route/AIRoute.js";
 import roadmapRoute from "./Route/RoadmapRoute.js";
-import resumeRoute from "./Route/ResumeRoute.js";
+
 import chatHistoryRoute from "./Route/ChatHistoryRoute.js";
 import fileUploadRoute from "./Route/FileUploadRoute.js";
+import retellRoute from "./Route/RetellRoute.js";
 
 const app = express();
 connectDB();
@@ -30,9 +37,9 @@ app.use("/api/user", userRoute);
 app.use("/api/career", careerInformationRoute);
 app.use("/api/ai", aiRoute);
 app.use("/api/roadmap", roadmapRoute);
-app.use("/api/resume", resumeRoute);
 app.use("/api/chat-history", chatHistoryRoute);
 app.use("/api/files", fileUploadRoute);
+app.use("/api/retell", retellRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
