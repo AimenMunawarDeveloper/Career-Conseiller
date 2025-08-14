@@ -8,7 +8,7 @@ import {
   addMessageToSession,
   clearChatSession,
 } from "../Controller/ChatHistoryController.js";
-import { authMiddleware } from "../Middleware/AuthMiddleware.js";
+import { authMiddleware } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
 
