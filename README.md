@@ -8,7 +8,6 @@ A comprehensive AI-powered career guidance platform that helps users navigate th
 - [Tech Stack](#tech-stack)
 - [Installation](#installation)
 - [API Endpoints](#api-endpoints)
-- [Deployment](#deployment)
 
 ## Overview
 
@@ -148,20 +147,6 @@ node server
 ### Chat History
 - `GET /api/chat-history` - Get chat history
 - `POST /api/chat-history` - Save chat message
-
-## Deployment
-
-### Vercel Deployment
-1. Connect your GitHub repository to Vercel
-2. Configure environment variables in Vercel dashboard
-3. Deploy frontend and backend as separate projects
-4. Update CORS settings with production URLs
-
-### Environment Setup
-- Set up MongoDB Atlas cluster
-- Configure Cloudinary for file storage
-- Set up Google Gemini and Retell API keys
-- Configure Vercel environment variables
 
 ## Author
 
