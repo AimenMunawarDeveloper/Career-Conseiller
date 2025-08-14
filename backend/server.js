@@ -38,6 +38,18 @@ const initializeApp = async () => {
       })
     );
 
+    // Add security headers
+    app.use((req, res, next) => {
+      res.setHeader(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' data: blob:; connect-src 'self' https:;"
+      );
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("X-Frame-Options", "DENY");
+      res.setHeader("X-XSS-Protection", "1; mode=block");
+      next();
+    });
+
     // Routes
     app.use("/api/user", userRoute);
     app.use("/api/career", careerInformationRoute);
@@ -50,6 +62,24 @@ const initializeApp = async () => {
     // Health check endpoint
     app.get("/api/health", (req, res) => {
       res.status(200).json({ status: "OK", message: "Server is running" });
+    });
+
+    // Root endpoint
+    app.get("/", (req, res) => {
+      res.status(200).json({
+        message: "Career Conseiller Backend API",
+        version: "1.0.0",
+        endpoints: {
+          health: "/api/health",
+          user: "/api/user",
+          career: "/api/career",
+          ai: "/api/ai",
+          roadmap: "/api/roadmap",
+          chatHistory: "/api/chat-history",
+          files: "/api/files",
+          retell: "/api/retell",
+        },
+      });
     });
 
     // For local development, start the server
