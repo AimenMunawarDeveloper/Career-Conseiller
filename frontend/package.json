@@ -17,11 +17,14 @@
     "vite": "^7.0.0"
   },
   "dependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
     "@google/genai": "^1.13.0",
     "axios": "^1.10.0",
     "framer-motion": "^10.16.16",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-datepicker": "^4.25.0",
     "react-dropzone": "^14.2.3",
     "react-hook-form": "^7.48.2",
