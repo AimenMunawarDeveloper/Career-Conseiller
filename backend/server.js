@@ -41,21 +41,25 @@ app.use("/api/chat-history", chatHistoryRoute);
 app.use("/api/files", fileUploadRoute);
 app.use("/api/retell", retellRoute);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-  console.log("Environment variables check:");
-  console.log(
-    "CLOUDINARY_CLOUD_NAME:",
-    process.env.CLOUDINARY_CLOUD_NAME ? "SET" : "NOT SET"
-  );
-  console.log(
-    "CLOUDINARY_API_KEY:",
-    process.env.CLOUDINARY_API_KEY ? "SET" : "NOT SET"
-  );
-  console.log(
-    "CLOUDINARY_API_SECRET:",
-    process.env.CLOUDINARY_API_SECRET ? "SET" : "NOT SET"
-  );
-});
-// console.log(process.env.LIGHTCAST_CLIENT_ID);
-// console.log(process.env.LIGHTCAST_CLIENT_SECRET);
+// For local development, start the server
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+    console.log("Environment variables check:");
+    console.log(
+      "CLOUDINARY_CLOUD_NAME:",
+      process.env.CLOUDINARY_CLOUD_NAME ? "SET" : "NOT SET"
+    );
+    console.log(
+      "CLOUDINARY_API_KEY:",
+      process.env.CLOUDINARY_API_KEY ? "SET" : "NOT SET"
+    );
+    console.log(
+      "CLOUDINARY_API_SECRET:",
+      process.env.CLOUDINARY_API_SECRET ? "SET" : "NOT SET"
+    );
+  });
+}
+
+// Export the app for Vercel serverless deployment
+export default app;
