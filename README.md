@@ -2,7 +2,7 @@
 
 A comprehensive AI-powered career guidance platform that helps users navigate their professional journey with personalized insights, skill analysis, and interactive tools.
 
-## �� Table of Contents
+## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
