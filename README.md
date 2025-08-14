@@ -117,7 +117,7 @@ npm run dev
 ```bash
 cd backend
 npm install
-npm start
+node server
 ```
 
 ## API Endpoints
