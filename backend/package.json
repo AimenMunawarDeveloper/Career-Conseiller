@@ -5,7 +5,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "vercel-build": "echo 'No build step required for Node.js'"
   },
   "author": "",
   "license": "ISC",
